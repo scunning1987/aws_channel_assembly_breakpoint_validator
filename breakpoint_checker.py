@@ -76,21 +76,15 @@ def getManifest(manifest):
     #mpd_xml_live = mpd_xml.text.replace("\n"," ")
     return xmltodict.parse(mpd_xml.text) #_live)
 
-'''
 # Run user input sub-functions that include error checks
 manifest = user_input_manifest()
-breakpoints = user_input_breakpoints()
+breakpoint_s = user_input_breakpoints()
 
 LOGGER.info("Successfully received manifest location and desired breakpoints")
 LOGGER.info("Manifest URL : %s " % (manifest))
-LOGGER.info("BreakPoints : %s " % (breakpoints))
+LOGGER.info("BreakPoints : %s " % (breakpoint_s))
 
-# Get the manifest
-# Iterate through the adaptation sets/Representations to get all the timelines
-# then go through the desired breakpoint list, get the closest elapsed segment and make sure all representations fall inside 100ms threshold, or try next segment
-# return list to the user
-'''
-manifest = "https://e920c2ddf26d305634c81b346235adca.egress.mediapackage-vod.us-west-2.amazonaws.com/out/v1/0b151c4d3a214c279700b6edec5deedf/c47de58a8250423ebb6fb42d50abdce0/1a441d1296a74c969466f350b1646392/dash-index.mpd"
+# Get the DASH Manifest and transform to JSON
 dash_mpd_json = getManifest(manifest)
 
 LOGGER.debug(json.dumps(dash_mpd_json))
@@ -216,54 +210,70 @@ for period in range(0,periods):
 
 # All Representations timelines are now in this dict: adaptation_set_dict , the master keys are the adaptation sets, then child key value for representation id and elapsed segment timeline
 
-breakpoint_s = [5,22,30,55,100]
 actual_breakpoints_list = []
 
 for breakpoint in breakpoint_s:
 
-    breakpoint_ms = breakpoint * 1000
+    breakpoint_ms = int(breakpoint) * 1000
 
     # Get closest segment boundary from first representation of first adaptation set
     adaptation_set_1 = adaptation_set_dict[list(adaptation_set_dict.keys())[0]]
     representation_1_timeline = adaptation_set_1[list(adaptation_set_1.keys())[0]]
     LOGGER.info("Timeline from first Representation of first Adaptation Set : %s" % (representation_1_timeline))
 
-    ## Now find Closest segment boundary and note the index in list
+    LOGGER.info("Trying to find aligned breakpoint at desired time: %s" % (str(breakpoint)))
+
+    retries = 0
     segment_index = 0
-    for segment in representation_1_timeline:
-        if segment < breakpoint_ms:
+    not_found_alignment = True
+
+    while not_found_alignment and retries < 5:
+
+        ## Now find Closest segment boundary and note the index in list
+        ## OR if we're in retry mode, the segment index has already incremented by 1
+        if retries == 0:
+            for segment in representation_1_timeline:
+                if segment < breakpoint_ms:
+                    segment_index += 1
+
+        # Protect the automatic increment for going beyond the range of the timeline list
+        if segment_index >= len(representation_1_timeline):
+            segment_index = len(representation_1_timeline)
+
+        actual_breakpoint = representation_1_timeline[segment_index]
+        LOGGER.info("Breakpoint at segment (0 based) : %s, cumulative duration : %s " % (segment_index,actual_breakpoint))
+        LOGGER.info("Now iterating through all other Representations to see if we can use this value")
+
+        boundary_point_exceptions = []
+        boundary_point_exceptions.clear()
+
+        LOGGER.info("Checking timelines for desired breakpoint : %s, actually looking for : %s" % (breakpoint_ms,actual_breakpoint))
+
+        for a in adaptation_set_dict:
+            LOGGER.info("Checking Adaptation Set : %s , there are %s representations" % (a,str(len(adaptation_set_dict[a]))))
+            for r in adaptation_set_dict[a]:
+                LOGGER.info("Checking Representation : %s" % (r))
+                found_boundary_point = False
+                segment_to_use = 0
+                for segment in adaptation_set_dict[a][r]:
+                    if segment > actual_breakpoint - 100 and segment < actual_breakpoint + 100:
+                        found_boundary_point = True
+                        if segment_to_use == 0:
+                            segment_to_use = segment
+                if found_boundary_point:
+                    LOGGER.info("Found suitable boundary point, at point %s" % (segment_to_use))
+                else:
+                    LOGGER.warning("Unable to find boundary point for Representation Id : %s " % (r))
+                    boundary_point_exceptions.append(r)
+
+        if len(boundary_point_exceptions) > 0:
+            LOGGER.warning("Unable to use the segment closest to the desired breakpoint. Trying the next segment...")
+            if retries == 4:
+                LOGGER.error("We're not going to continue searching for alignment on the specified breakpoint : %s " % (breakpoint))
+            retries += 1
             segment_index += 1
-
-    actual_breakpoint = representation_1_timeline[segment_index]
-    LOGGER.info("Breakpoint at segment (0 based) : %s, cumulative duration : %s " % (segment_index,actual_breakpoint))
-    LOGGER.info("Now iterating through all other Representations to see if we can use this value")
-
-    boundary_point_exceptions = []
-    boundary_point_exceptions.clear()
-
-    LOGGER.info("Checking timelines for desired breakpoint : %s, actually looking for : %s" % (breakpoint_ms,actual_breakpoint))
-
-    for a in adaptation_set_dict:
-        LOGGER.info("Checking Adaptation Set : %s , there are %s representations" % (a,str(len(adaptation_set_dict[a]))))
-        for r in adaptation_set_dict[a]:
-            LOGGER.info("Checking Representation : %s" % (r))
-            found_boundary_point = False
-            segment_to_use = 0
-            for segment in adaptation_set_dict[a][r]:
-                if segment > actual_breakpoint - 100 and segment < actual_breakpoint + 100:
-                    found_boundary_point = True
-                    if segment_to_use == 0:
-                        segment_to_use = segment
-            if found_boundary_point:
-                LOGGER.info("Found suitable boundary point, at point %s" % (segment_to_use))
-            else:
-                LOGGER.warning("Unable to find boundary point for Representation Id : %s " % (r))
-                boundary_point_exceptions.append(r)
-
-    if len(boundary_point_exceptions) > 0:
-        LOGGER.warning("Unable to use the segment closest to the desired breakpoint. Trying the next segment...")
-    else:
-        actual_breakpoints_list.append(actual_breakpoint)
+        else:
+            actual_breakpoints_list.append(actual_breakpoint)
+            not_found_alignment = False
 
 LOGGER.info("SCRIPT RUN COMPLETE: Please use these breakpoints for your asset : %s" % (actual_breakpoints_list))
-

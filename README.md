@@ -37,3 +37,15 @@ You will be prompted to enter the manifest URL and desired breakpoints. Each inp
 The script will attempt to get the DASH Manifest from the location specified, then it will try to align segment boundaries from all renditions to the desired breakpoints.
 
 The script will exit with errors if there are any, otherwise it will print a list of breakpoints in milliseconds that can be used in Channel Assembly.
+
+Here's an example of the prompts and message prints you will see when running the script:
+```
+Please enter the location of the DASH manifest:https://mediapackage-vod.us-west-2.amazonaws.com/12345/dash.mpd
+
+You entered https://mediapackage-vod.us-west-2.amazonaws.com/12345/dash.mpd for the manifest location, is this correct? [Y,N]y
+
+Enter your desired breakpoints, in seconds. Separated by comma's. IE: 30,60,90,150,240 :15,30,90,120
+
+You entered 15,30,90,120 for the desired breakpoints, is this correct? [Y,N]y
+
+```
