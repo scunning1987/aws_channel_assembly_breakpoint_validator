@@ -10,8 +10,9 @@ This Python script accepts input from a user for:
 The script then iterates through the manifest to check if the desired breakpoint is suitable across all video, audio, and subtitle renditions.
 
 ### Limitations
-Segment Timeline is expected to be a child element of Representations.
-Segment Timescale is expected to be an attribute inside of Representations element.
+* This script is intended for MPEG DASH assets only
+* Segment Timeline is expected to be a child element of Representations.
+* Segment Timescale is expected to be an attribute inside of Representations element.
 
 ## Dependencies
 This script utilizes the follow Python packages:
