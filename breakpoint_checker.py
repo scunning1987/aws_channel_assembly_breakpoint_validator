@@ -95,22 +95,13 @@ dash_mpd_json = getManifest(manifest)
 
 LOGGER.debug(json.dumps(dash_mpd_json))
 
-# representation id
-# timescale
-# timeline
-
-LOGGER.info("Manifest Modifier: Starting...")
+LOGGER.info("Manifest Parser and Timeline Calculator: Starting...")
 
 manifest_modify_exceptions = []
 manifest_modify_exceptions.clear()
 adaptation_set_dict = dict()
 ### Modify at the MPD Level Here ### START
 # EXAMPLE : dash_mpd_json['MPD']['@attribute'] == XX
-
-try:
-    dash_mpd_json['MPD']['@id'] = "100"
-except Exception as e:
-    manifest_modify_exceptions.append("Can't change profile attribute value : %s" % (e))
 
 ### Modify at the MPD Level Here ### END
 
@@ -131,16 +122,7 @@ for period in range(0,periods):
 
     ### Modify at the Period Level Here ### START
     ## p['attribute']
-    '''
-    try:
-        del p['@start']
-    except Exception as e:
-        manifest_modify_exceptions.append("Period %s : Unable to remove start attribute : %s" % (period,e))
-    try:
-        del p['EventStream']
-    except Exception as e:
-        manifest_modify_exceptions.append("Period %s : Unable to remove EventStream element : %s" % (period,e))
-    '''
+
     ### Modify at the Period Level Here ### END
 
     ### ADAPTATION SET
@@ -231,4 +213,57 @@ for period in range(0,periods):
             else:
                 adaptation_set_dict[adaptation_set_name][representation_id].update(timeline_segments_ms)
             ### Modify at the Representation Level Here ### END
-print(adaptation_set_dict)
+
+# All Representations timelines are now in this dict: adaptation_set_dict , the master keys are the adaptation sets, then child key value for representation id and elapsed segment timeline
+
+breakpoint_s = [5,22,30,55,100]
+actual_breakpoints_list = []
+
+for breakpoint in breakpoint_s:
+
+    breakpoint_ms = breakpoint * 1000
+
+    # Get closest segment boundary from first representation of first adaptation set
+    adaptation_set_1 = adaptation_set_dict[list(adaptation_set_dict.keys())[0]]
+    representation_1_timeline = adaptation_set_1[list(adaptation_set_1.keys())[0]]
+    LOGGER.info("Timeline from first Representation of first Adaptation Set : %s" % (representation_1_timeline))
+
+    ## Now find Closest segment boundary and note the index in list
+    segment_index = 0
+    for segment in representation_1_timeline:
+        if segment < breakpoint_ms:
+            segment_index += 1
+
+    actual_breakpoint = representation_1_timeline[segment_index]
+    LOGGER.info("Breakpoint at segment (0 based) : %s, cumulative duration : %s " % (segment_index,actual_breakpoint))
+    LOGGER.info("Now iterating through all other Representations to see if we can use this value")
+
+    boundary_point_exceptions = []
+    boundary_point_exceptions.clear()
+
+    LOGGER.info("Checking timelines for desired breakpoint : %s, actually looking for : %s" % (breakpoint_ms,actual_breakpoint))
+
+    for a in adaptation_set_dict:
+        LOGGER.info("Checking Adaptation Set : %s , there are %s representations" % (a,str(len(adaptation_set_dict[a]))))
+        for r in adaptation_set_dict[a]:
+            LOGGER.info("Checking Representation : %s" % (r))
+            found_boundary_point = False
+            segment_to_use = 0
+            for segment in adaptation_set_dict[a][r]:
+                if segment > actual_breakpoint - 100 and segment < actual_breakpoint + 100:
+                    found_boundary_point = True
+                    if segment_to_use == 0:
+                        segment_to_use = segment
+            if found_boundary_point:
+                LOGGER.info("Found suitable boundary point, at point %s" % (segment_to_use))
+            else:
+                LOGGER.warning("Unable to find boundary point for Representation Id : %s " % (r))
+                boundary_point_exceptions.append(r)
+
+    if len(boundary_point_exceptions) > 0:
+        LOGGER.warning("Unable to use the segment closest to the desired breakpoint. Trying the next segment...")
+    else:
+        actual_breakpoints_list.append(actual_breakpoint)
+
+LOGGER.info("SCRIPT RUN COMPLETE: Please use these breakpoints for your asset : %s" % (actual_breakpoints_list))
+
