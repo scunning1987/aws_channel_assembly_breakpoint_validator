@@ -1,6 +1,8 @@
 # AWS Channel Assembly BreakPoint Validator
 
 ## Overview
+AWS MediaTailor Channel Assembly supports inserting ad content inside program assets in the channel timeline. However, there is a caveat that the value specified by the operator for the desired ad break must align with segment boundaries from all media representations/renditions. The tolerance for the value entered is +/- 100ms. This script is designed to check the manifest against your desired breakpoints, and then return will actual values you can use that are as close as possible to what you intended.
+
 This Python script accepts input from a user for:
 * Manifest URL
 * Desired BreakPoints (seconds) *comma delimited*
