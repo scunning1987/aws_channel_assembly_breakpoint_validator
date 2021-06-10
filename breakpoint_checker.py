@@ -238,10 +238,11 @@ for breakpoint in breakpoint_s:
 
         # Protect the automatic increment for going beyond the range of the timeline list
         if segment_index >= len(representation_1_timeline):
-            segment_index = len(representation_1_timeline)
+            LOGGER.warning("The desired breakpoint %s is greater than the duration of the asset, we are modifying this so it is equal to the last segment break at %s ms" % (breakpoint,str(representation_1_timeline[-1])))
+            segment_index = len(representation_1_timeline)-1
 
         actual_breakpoint = representation_1_timeline[segment_index]
-        LOGGER.info("Breakpoint at segment (0 based) : %s, cumulative duration : %s " % (segment_index,actual_breakpoint))
+        LOGGER.info("Breakpoint at segment (0 based) : %s, cumulative duration : %s ms" % (segment_index,actual_breakpoint))
         LOGGER.info("Now iterating through all other Representations to see if we can use this value")
 
         boundary_point_exceptions = []
@@ -276,4 +277,4 @@ for breakpoint in breakpoint_s:
             actual_breakpoints_list.append(actual_breakpoint)
             not_found_alignment = False
 
-LOGGER.info("SCRIPT RUN COMPLETE: Please use these breakpoints for your asset : %s" % (actual_breakpoints_list))
+LOGGER.info("SCRIPT RUN COMPLETE: Please use these breakpoints for your asset (ms) : %s" % (actual_breakpoints_list))

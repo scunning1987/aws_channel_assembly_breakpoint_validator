@@ -49,3 +49,9 @@ Enter your desired breakpoints, in seconds. Separated by comma's. IE: 30,60,90,1
 You entered 15,30,90,120 for the desired breakpoints, is this correct? [Y,N]y
 
 ```
+
+A series of INFO messages will then be displayed at the script iterates through the DASH manifest. At the end, if all is well you will see an INFO message similar to the below:
+
+```
+2021-06-10 12:58:53,814 - root - INFO - SCRIPT RUN COMPLETE: Please use these breakpoints for your asset : [18108, 30120, 60150, 90180]
+```
