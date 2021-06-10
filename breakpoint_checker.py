@@ -257,7 +257,7 @@ for breakpoint in breakpoint_s:
                 found_boundary_point = False
                 segment_to_use = 0
                 for segment in adaptation_set_dict[a][r]:
-                    if segment > actual_breakpoint - 100 and segment < actual_breakpoint + 100:
+                    if segment > actual_breakpoint - 50 and segment < actual_breakpoint + 50:
                         found_boundary_point = True
                         if segment_to_use == 0:
                             segment_to_use = segment
