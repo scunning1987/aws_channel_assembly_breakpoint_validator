@@ -15,12 +15,19 @@ The script then iterates through the manifest to check if the desired breakpoint
 * Segment Timescale is expected to be an attribute inside of Representations element.
 
 ## Dependencies
+You will need Python 3.7 or 3.9 to run this script. Find out how to install/upgrade Python for your platform [here](https://www.python.org/)
+
 This script utilizes the follow Python packages:
 * requests
 * re (regex)
 * json
 * logging
 * xmltodict
+
+To install REQUESTS module and XMLTODICT module, you'll need to install them via pip. 
+* How to [install](https://pip.pypa.io/en/stable/installing/) PIP
+* How to install [requests](https://pypi.org/project/requests/) module
+* How to install [xmltodict](https://pypi.org/project/xmltodict/) module
 
 It has been validated to run on Python version 3.7 and 3.9
 
