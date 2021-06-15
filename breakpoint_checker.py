@@ -1,5 +1,4 @@
 '''
-
 Copyright (c) 2021 Scott Cunningham
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
